@@ -32,17 +32,8 @@ h1{font-size:clamp(24px,4vw,36px);margin:0 0 8px} .intro{color:#555;margin:0 0 2
 .day .mark{margin-top:auto;font-size:11px;color:#2365a5;font-weight:700}
 .day.selected .mark::before{content:"✓ "}
 .controls{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:12px;align-items:end}
-label{display:block;font-size:13px;font-weight:700;margin-bottom:6px;color:#222}
-input[type="time"]{color:#171717;font-weight:600;background:#fff;border:1px solid #aeb7c2;border-radius:10px;padding:11px 12px;min-height:44px;accent-color:#1769aa}
-input[type="time"]::-webkit-datetime-edit{color:#171717}
-input[type="time"]::-webkit-datetime-edit-hour-field,
-input[type="time"]::-webkit-datetime-edit-minute-field{color:#171717}
-input[type="time"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:.85}
-.time-field{position:relative}
-.time-field label{color:#202020}
-.time-field input{box-shadow:inset 0 1px 2px #00000008}
-.time-field input:focus{outline:2px solid #b8d8f5;outline-offset:1px;border-color:#1769aa}
-input,select{width:100%;padding:10px;border:1px solid #bbb;border-radius:8px;background:white;font:inherit}
+label{display:block;font-size:13px;font-weight:700;margin-bottom:6px}
+input,select{width:100%;padding:10px;border:1px solid #bbb;border-radius:8px;background:white;color:#171717;font:inherit}input[type=time]{color:#171717;color-scheme:light}input[type=time]::-webkit-datetime-edit, input[type=time]::-webkit-datetime-edit-fields-wrapper, input[type=time]::-webkit-datetime-edit-hour-field, input[type=time]::-webkit-datetime-edit-minute-field{color:#171717}
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
 .primary{background:#1769aa;color:#fff;border-color:#1769aa}.primary:hover{background:#12588f;color:#fff}
 .danger{color:#b21d25;border-color:#e3b5b8}
@@ -55,13 +46,21 @@ td button{border:0;background:transparent;color:#b21d25;cursor:pointer;font-weig
 footer{color:#777;font-size:12px;text-align:center;margin:20px}
 @media(max-width:720px){.controls{grid-template-columns:1fr 1fr}.day{min-height:55px;padding:5px}.day.selected{padding:4px}.day .num{font-size:17px}.weekday{font-size:10px}.day .mark{font-size:9px}}
 @media(max-width:440px){.controls{grid-template-columns:1fr}.month-title{order:-1;width:100%}.day{min-height:48px}.day .num{font-size:15px}}
-@media print{body{background:white}.wrap{max-width:none}.no-print{display:none!important}.panel{box-shadow:none;border:0;padding:0}.day{min-height:45px}}
+@media print{
+  body *{visibility:hidden!important}
+  #tableWrap,#tableWrap *{visibility:visible!important}
+  #tableWrap{position:absolute;left:0;top:0;width:100%;margin:0}
+  #tableWrap table{margin:0;width:100%;font-size:12pt}
+  #tableWrap th,#tableWrap td{padding:8px;border:1px solid #999}
+  #tableWrap th{background:#eee!important;color:#000!important}
+  #tableWrap .no-print{display:none!important}
+}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>Kalendarz konsultacji</h1>
-  <p class="intro">Zaznacz kilka terminów w kalendarzu, ustaw wspólną godzinę i zatwierdź. Terminy pojawią się w tabeli poniżej.</p>
+  <p class="intro">Zaznacz terminy konsultacji, ustaw datę, skopiuj tabelę i prześlij na maila: <a href="mailto:marcin.szydlowski@ideis.pl?subject=konsultacje%20dla%20kochanego%20marcinka%20%3AD%29">marcin.szydlowski@ideis.pl</a> (tytuł maila: <strong>konsultacje dla kochanego marcinka :D</strong>)</p>
 
   <section class="panel">
     <div class="toolbar">
@@ -70,18 +69,16 @@ footer{color:#777;font-size:12px;text-align:center;margin:20px}
       <button id="next" aria-label="Następny miesiąc">Następny →</button>
     </div>
     <div class="calendar" id="calendar"></div>
-    <div style="display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:13px;font-size:12px;color:#555">
-<span>🟨 Przerwy / dni wolne</span><span>🟪 Sesja / poprawkowa</span><span>🟩 Zajęcia dydaktyczne</span><span>🟦 Ważne wydarzenia</span></div>
 <div class="notice">Kraków · rok akademicki 2026/2027. Najedź na oznaczony dzień, aby zobaczyć szczegóły. Kliknij dzień, aby go zaznaczyć lub odznaczyć.</div>
   </section>
 
   <section class="panel">
     <h2 style="margin-top:0">Ustawienia zaznaczonych terminów</h2>
     <div class="controls">
-      <div class="time-field"><label for="start">Godzina od</label><input id="start" type="time" value="18:00" aria-label="Wybierz godzinę rozpoczęcia"></div>
-      <div class="time-field"><label for="end">Godzina do</label><input id="end" type="time" value="19:00" aria-label="Wybierz godzinę zakończenia"></div>
+      <div><label for="start">Godzina od</label><input id="start" type="time" value="18:00"></div>
+      <div><label for="end">Godzina do</label><input id="end" type="time" value="18:45"></div>
       <div><label for="form">Forma</label><select id="form"><option>Stacjonarna</option><option>Online</option><option>Hybrydowa</option></select></div>
-      <div><label for="place">Miejsce / link (opcjonalnie)</label><input id="place" placeholder="np. pokój 204 lub Teams"></div>
+      <div><label for="place">Komentarz (opcjonalnie)</label><input id="place" placeholder="np. dodatkowa informacja dla studentów"></div>
     </div>
     <div class="actions">
       <button class="btn primary" id="approve">Zatwierdź zaznaczone daty</button>
@@ -101,11 +98,20 @@ footer{color:#777;font-size:12px;text-align:center;margin:20px}
       <button class="btn" id="print">Drukuj / zapisz PDF</button>
       <button class="btn danger" id="clearAll">Usuń wszystkie terminy</button>
     </div>
-    <div class="notice">„Kopiuj tabelę” kopiuje wyłącznie tabelę zatwierdzonych terminów (bez przycisków akcji).</div>
+    <div class="notice">„Kopiuj tabelę” kopiuje zestawienie do schowka — możesz wkleić je bezpośrednio do Excela.</div>
   </section>
-  <footer>Prototyp kalendarza konsultacji — dane są przechowywane lokalnie w tej przeglądarce.</footer>
+  <footer>Skopiuj tabelę i prześlij na adres <a href="mailto:marcin.szydlowski@ideis.pl?subject=konsultacje%20dla%20kochanego%20marcinka%20%3AD%29">marcin.szydlowski@ideis.pl</a></footer>
 </div>
 <script>
+// Domyślna godzina „do” ustawiana 45 minut po godzinie „od”.
+document.getElementById('start').addEventListener('change', function(){
+  const [h,m] = this.value.split(':').map(Number);
+  if(Number.isFinite(h) && Number.isFinite(m)){
+    const total = (h*60+m+45)%(24*60);
+    document.getElementById('end').value =
+      String(Math.floor(total/60)).padStart(2,'0')+':'+String(total%60).padStart(2,'0');
+  }
+});
 const names=['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];
 const weekdays=['Pon','Wt','Śr','Czw','Pt','Sob','Niedz'];
 let view=new Date(2026,10,1), selected=new Set(), appointments=[];
@@ -184,26 +190,11 @@ $('print').onclick=()=>window.print();
 $('copyTable').onclick=async()=>{
  if(!appointments.length){alert('Brak zatwierdzonych terminów.');return}
  const sorted=[...appointments].sort((a,b)=>a.date.localeCompare(b.date));
- const headers=['Data','Dzień tygodnia','Godzina','Forma','Miejsce / link'];
- const rows=sorted.map(a=>[pretty(a.date),weekday(a.date),`${a.start}–${a.end}`,a.form,a.place||'—']);
- const plain=[headers.join('\t'),...rows.map(r=>r.join('\t'))].join('\n');
- const html='<table><thead><tr>'+headers.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+
- rows.map(r=>'<tr>'+r.map(v=>'<td>'+esc(v)+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
- try{
-   if(navigator.clipboard&&window.ClipboardItem){
-     await navigator.clipboard.write([new ClipboardItem({
-       'text/html':new Blob([html],{type:'text/html'}),
-       'text/plain':new Blob([plain],{type:'text/plain'})
-     })]);
-   }else if(navigator.clipboard&&navigator.clipboard.writeText){
-     await navigator.clipboard.writeText(plain);
-   }else{
-     const ta=document.createElement('textarea');ta.value=plain;document.body.append(ta);ta.select();document.execCommand('copy');ta.remove();
-   }
-   $('copyNotice').textContent='Skopiowano samą tabelę terminów. Wklej ją do Worda, Teams lub wiadomości.';
- }catch(err){
-   $('copyNotice').textContent='Kopiowanie nie powiodło się. Spróbuj ponownie.';
- }
+ const lines=[['Data','Dzień tygodnia','Godzina','Forma','Komentarz'],
+ ...sorted.map(a=>[pretty(a.date),weekday(a.date),`${a.start}–${a.end}`,a.form,a.place||'—'])];
+ const text=lines.map(row=>row.join('\\t')).join('\\n');
+ try{await navigator.clipboard.writeText(text);alert('Tabela skopiowana. Możesz wkleić ją do Excela (Ctrl+V).')}
+ catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();alert('Tabela skopiowana. Możesz wkleić ją do Excela (Ctrl+V).')}
 };
 renderCalendar();renderTable();updateInfo();
 </script>
