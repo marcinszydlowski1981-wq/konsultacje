@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kalendarz konsultacji</title>
+<style>
+:root{--ink:#171717;--muted:#777;--line:#d7d7d7;--accent:#e5252a;--select:#dcecff;--select-border:#2878c8}
+*{box-sizing:border-box}body{margin:0;background:#f4f5f7;color:var(--ink);font-family:Arial,Helvetica,sans-serif}
+.wrap{max-width:1100px;margin:24px auto;padding:0 16px}
+h1{font-size:clamp(24px,4vw,36px);margin:0 0 8px} .intro{color:#555;margin:0 0 20px}
+.panel{background:#fff;border:1px solid #ddd;border-radius:14px;padding:18px;margin-bottom:18px;box-shadow:0 3px 12px #00000008}
+.toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px}
+.toolbar button,.btn{border:1px solid #bbb;background:#fff;color:#4a4a4a;border-radius:8px;padding:9px 13px;cursor:pointer;font-weight:600}
+.toolbar button:hover,.btn:hover{background:#f1f1f1}
+.month-title{font-size:23px;font-weight:700;text-align:center;min-width:190px}
+.calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+.weekday{text-align:center;font-size:12px;font-weight:700;color:#555;padding:8px 2px;background:#ececec;border-radius:5px}
+.day{min-height:78px;border:1px solid #ddd;border-radius:7px;background:#f2f2f2;padding:7px;cursor:pointer;position:relative;transition:.12s;display:flex;flex-direction:column}
+.day:hover{background:#f0f7ff;border-color:#78aee8;box-shadow:0 0 0 2px #c9e3ff}
+.day.out{background:#f7f7f7;color:#aaa}
+.day.selected{background:var(--select);border:2px solid var(--select-border);padding:6px}
+.day.today .num{color:var(--accent)}
+.day.event-holiday{background:#fff8e8;border-color:#ead7a8}
+.day.event-session{background:#f3edff;border-color:#d8c8ef}
+.day.event-classes{background:#edf7f0;border-color:#c9e3d0}
+.day.event-important{background:#edf4fb;border-color:#c9dced}
+.day .event-label{font-size:9px;line-height:1.15;margin-top:5px;color:#555;font-weight:600;overflow-wrap:anywhere}
+.day.selected{background:var(--select)!important;border-color:var(--select-border)!important}
+.day.selected .event-label{color:#174c80}
+.day:not(.out) .num{font-size:21px;font-weight:700;color:#4a4a4a;text-shadow:none}.day.out .num{font-size:21px;font-weight:700;text-shadow:-1px 0 #f2f2f2,1px 0 #f2f2f2,0 -1px #f2f2f2,0 1px #f2f2f2}
+.day .mark{margin-top:auto;font-size:11px;color:#2365a5;font-weight:700}
+.day.selected .mark::before{content:"✓ "}
+.controls{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:12px;align-items:end}
+label{display:block;font-size:13px;font-weight:700;margin-bottom:6px;color:#222}
+input[type="time"]{color:#171717;font-weight:600;background:#fff;border:1px solid #aeb7c2;border-radius:10px;padding:11px 12px;min-height:44px;accent-color:#1769aa}
+input[type="time"]::-webkit-datetime-edit{color:#171717}
+input[type="time"]::-webkit-datetime-edit-hour-field,
+input[type="time"]::-webkit-datetime-edit-minute-field{color:#171717}
+input[type="time"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:.85}
+.time-field{position:relative}
+.time-field label{color:#202020}
+.time-field input{box-shadow:inset 0 1px 2px #00000008}
+.time-field input:focus{outline:2px solid #b8d8f5;outline-offset:1px;border-color:#1769aa}
+input,select{width:100%;padding:10px;border:1px solid #bbb;border-radius:8px;background:white;font:inherit}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.primary{background:#1769aa;color:#fff;border-color:#1769aa}.primary:hover{background:#12588f;color:#fff}
+.danger{color:#b21d25;border-color:#e3b5b8}
+.notice{color:#555;font-size:13px;margin-top:10px}
+table{width:100%;border-collapse:collapse;margin-top:12px}
+th,td{border-bottom:1px solid #ddd;padding:11px 9px;text-align:left}
+th{background:#eee;font-size:13px}
+td button{border:0;background:transparent;color:#b21d25;cursor:pointer;font-weight:700}
+.empty{color:#777;text-align:center;padding:24px}
+footer{color:#777;font-size:12px;text-align:center;margin:20px}
+@media(max-width:720px){.controls{grid-template-columns:1fr 1fr}.day{min-height:55px;padding:5px}.day.selected{padding:4px}.day .num{font-size:17px}.weekday{font-size:10px}.day .mark{font-size:9px}}
+@media(max-width:440px){.controls{grid-template-columns:1fr}.month-title{order:-1;width:100%}.day{min-height:48px}.day .num{font-size:15px}}
+@media print{body{background:white}.wrap{max-width:none}.no-print{display:none!important}.panel{box-shadow:none;border:0;padding:0}.day{min-height:45px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Kalendarz konsultacji</h1>
+  <p class="intro">Zaznacz kilka terminów w kalendarzu, ustaw wspólną godzinę i zatwierdź. Terminy pojawią się w tabeli poniżej.</p>
+
+  <section class="panel">
+    <div class="toolbar">
+      <button id="prev" aria-label="Poprzedni miesiąc">← Poprzedni</button>
+      <div class="month-title" id="monthTitle"></div>
+      <button id="next" aria-label="Następny miesiąc">Następny →</button>
+    </div>
+    <div class="calendar" id="calendar"></div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:13px;font-size:12px;color:#555">
+<span>🟨 Przerwy / dni wolne</span><span>🟪 Sesja / poprawkowa</span><span>🟩 Zajęcia dydaktyczne</span><span>🟦 Ważne wydarzenia</span></div>
+<div class="notice">Kraków · rok akademicki 2026/2027. Najedź na oznaczony dzień, aby zobaczyć szczegóły. Kliknij dzień, aby go zaznaczyć lub odznaczyć.</div>
+  </section>
+
+  <section class="panel">
+    <h2 style="margin-top:0">Ustawienia zaznaczonych terminów</h2>
+    <div class="controls">
+      <div class="time-field"><label for="start">Godzina od</label><input id="start" type="time" value="18:00" aria-label="Wybierz godzinę rozpoczęcia"></div>
+      <div class="time-field"><label for="end">Godzina do</label><input id="end" type="time" value="19:00" aria-label="Wybierz godzinę zakończenia"></div>
+      <div><label for="form">Forma</label><select id="form"><option>Stacjonarna</option><option>Online</option><option>Hybrydowa</option></select></div>
+      <div><label for="place">Miejsce / link (opcjonalnie)</label><input id="place" placeholder="np. pokój 204 lub Teams"></div>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="approve">Zatwierdź zaznaczone daty</button>
+      <button class="btn" id="clearSelection">Wyczyść zaznaczenie</button>
+    </div>
+    <div class="notice" id="selectionInfo">Nie zaznaczono dat.</div>
+  </section>
+
+  <section class="panel">
+    <div class="toolbar">
+      <h2 style="margin:0">Zatwierdzone terminy</h2>
+      <span id="count">0 terminów</span>
+    </div>
+    <div id="tableWrap"><div class="empty">Po zatwierdzeniu dat tabela pojawi się tutaj.</div></div>
+    <div class="actions no-print">
+      <button class="btn primary" id="copyTable">Kopiuj tabelę</button>
+      <button class="btn" id="print">Drukuj / zapisz PDF</button>
+      <button class="btn danger" id="clearAll">Usuń wszystkie terminy</button>
+    </div>
+    <div class="notice">„Kopiuj tabelę” kopiuje wyłącznie tabelę zatwierdzonych terminów (bez przycisków akcji).</div>
+  </section>
+  <footer>Prototyp kalendarza konsultacji — dane są przechowywane lokalnie w tej przeglądarce.</footer>
+</div>
+<script>
+const names=['Styczeń','Luty','Marzec','Kwiecień','Maj','Czerwiec','Lipiec','Sierpień','Wrzesień','Październik','Listopad','Grudzień'];
+const weekdays=['Pon','Wt','Śr','Czw','Pt','Sob','Niedz'];
+let view=new Date(2026,10,1), selected=new Set(), appointments=[];
+const $=id=>document.getElementById(id);
+const keyDate=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const parseDate=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+const pretty=s=>{const d=parseDate(s);return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`};
+const weekday=s=>['Niedziela','Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota'][parseDate(s).getDay()];
+
+// Terminy WSS w Krakowie na podstawie zarządzenia nr 75/2026.
+const calendarEvents=[
+{from:'2026-10-07',to:'2026-10-07',label:'Inauguracja Kraków',type:'important'},
+{from:'2026-11-02',to:'2026-11-02',label:'Dzień wolny',type:'holiday'},
+{from:'2026-10-31',to:'2026-10-31',label:'Dzień wolny niest.',type:'holiday'},
+{from:'2026-12-21',to:'2027-01-06',label:'Przerwa świąteczna',type:'holiday'},
+{from:'2027-01-29',to:'2027-01-29',label:'Koniec zajęć stacj.',type:'important'},
+{from:'2027-02-05',to:'2027-02-05',label:'Sesja stacj. do',type:'session'},
+{from:'2027-02-09',to:'2027-02-19',label:'Poprawkowa stacj.',type:'session'},
+{from:'2027-02-14',to:'2027-02-14',label:'Koniec zajęć niest.',type:'important'},
+{from:'2027-02-22',to:'2027-02-22',label:'Sesja niest. do',type:'session'},
+{from:'2027-02-26',to:'2027-03-08',label:'Poprawkowa niest.',type:'session'},
+{from:'2027-02-22',to:'2027-06-11',label:'Zajęcia letnie stacj.',type:'classes'},
+{from:'2027-02-26',to:'2027-07-11',label:'Zajęcia letnie niest.',type:'classes'},
+{from:'2027-03-25',to:'2027-03-30',label:'Przerwa świąteczna',type:'holiday'},
+{from:'2027-05-28',to:'2027-05-28',label:'Dzień wolny stacj.',type:'holiday'},
+{from:'2027-05-02',to:'2027-05-02',label:'Dzień wolny niest.',type:'holiday'},
+{from:'2027-06-11',to:'2027-06-11',label:'Koniec zajęć stacj.',type:'important'},
+{from:'2027-06-18',to:'2027-06-18',label:'Sesja stacj. do',type:'session'},
+{from:'2027-06-18',to:'2027-06-18',label:'Absolutorium Kraków',type:'important'},
+{from:'2027-07-19',to:'2027-07-19',label:'Sesja niest. do',type:'session'},
+{from:'2027-09-06',to:'2027-09-19',label:'Poprawkowa',type:'session'}
+];
+function eventFor(k){return calendarEvents.filter(e=>k>=e.from&&k<=e.to);}
+
+function renderCalendar(){
+ $('monthTitle').textContent=names[view.getMonth()]+' '+view.getFullYear();
+ const cal=$('calendar');cal.innerHTML='';
+ weekdays.forEach(w=>{let el=document.createElement('div');el.className='weekday';el.textContent=w;cal.append(el)});
+ const first=new Date(view.getFullYear(),view.getMonth(),1), offset=(first.getDay()+6)%7;
+ const start=new Date(view.getFullYear(),view.getMonth(),1-offset);
+ const today=keyDate(new Date());
+ for(let i=0;i<42;i++){
+  const d=new Date(start);d.setDate(start.getDate()+i);const k=keyDate(d);
+  const el=document.createElement('button');el.type='button';el.className='day'+(d.getMonth()!==view.getMonth()?' out':'')+(selected.has(k)?' selected':'')+(k===today?' today':'');
+  el.setAttribute('aria-pressed',selected.has(k));
+  const events=eventFor(k);
+  if(events.length){el.classList.add('event-'+events[0].type);el.title=events.map(e=>e.label).join(' • ');}
+  el.innerHTML=`<span class="num">${d.getDate()}</span><span class="mark">${selected.has(k)?'Wybrano':''}</span>${events.length?`<span class="event-label">${events.map(e=>e.label).join(' · ')}</span>`:''}`;
+  el.title=`${weekday(k)}, ${pretty(k)}${events.length?' — '+events.map(e=>e.label).join(' • '):''}`;
+  el.addEventListener('click',()=>{selected.has(k)?selected.delete(k):selected.add(k);renderCalendar();updateInfo()});
+  cal.append(el);
+ }
+}
+function updateInfo(){$('selectionInfo').textContent=selected.size?`Zaznaczono ${selected.size} ${selected.size===1?'datę':selected.size<5?'daty':'dat'}.`:'Nie zaznaczono dat.'}
+function renderTable(){
+ $('count').textContent=`${appointments.length} ${appointments.length===1?'termin':appointments.length<5?'terminy':'terminów'}`;
+ if(!appointments.length){$('tableWrap').innerHTML='<div class="empty">Po zatwierdzeniu dat tabela pojawi się tutaj.</div>';return}
+ const sorted=[...appointments].sort((a,b)=>a.date.localeCompare(b.date));
+ $('tableWrap').innerHTML=`<table><thead><tr><th>Data</th><th>Dzień tygodnia</th><th>Godzina</th><th>Forma</th><th>Miejsce / link</th><th class="no-print">Akcja</th></tr></thead><tbody>${sorted.map(a=>`<tr><td>${pretty(a.date)}</td><td>${weekday(a.date)}</td><td>${a.start}–${a.end}</td><td>${esc(a.form)}</td><td>${esc(a.place||'—')}</td><td class="no-print"><button data-del="${a.date}" title="Usuń termin">Usuń</button></td></tr>`).join('')}</tbody></table>`;
+ $('tableWrap').querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{appointments=appointments.filter(a=>a.date!==b.dataset.del);renderTable()}));
+}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+$('prev').onclick=()=>{view=new Date(view.getFullYear(),view.getMonth()-1,1);renderCalendar()};
+$('next').onclick=()=>{view=new Date(view.getFullYear(),view.getMonth()+1,1);renderCalendar()};
+$('clearSelection').onclick=()=>{selected.clear();renderCalendar();updateInfo()};
+$('approve').onclick=()=>{
+ const start=$('start').value,end=$('end').value;
+ if(!selected.size){alert('Najpierw zaznacz przynajmniej jedną datę.');return}
+ if(!start||!end||start>=end){alert('Ustaw prawidłowy przedział godzin (godzina końca musi być późniejsza).');return}
+ const form=$('form').value,place=$('place').value.trim();
+ selected.forEach(date=>{const item={date,start,end,form,place};const idx=appointments.findIndex(a=>a.date===date);if(idx>=0)appointments[idx]=item;else appointments.push(item)});
+ selected.clear();renderCalendar();updateInfo();renderTable();
+};
+$('clearAll').onclick=()=>{if(confirm('Usunąć wszystkie zatwierdzone terminy?')){appointments=[];renderTable()}};
+$('print').onclick=()=>window.print();
+$('copyTable').onclick=async()=>{
+ if(!appointments.length){alert('Brak zatwierdzonych terminów.');return}
+ const sorted=[...appointments].sort((a,b)=>a.date.localeCompare(b.date));
+ const headers=['Data','Dzień tygodnia','Godzina','Forma','Miejsce / link'];
+ const rows=sorted.map(a=>[pretty(a.date),weekday(a.date),`${a.start}–${a.end}`,a.form,a.place||'—']);
+ const plain=[headers.join('\t'),...rows.map(r=>r.join('\t'))].join('\n');
+ const html='<table><thead><tr>'+headers.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+
+ rows.map(r=>'<tr>'+r.map(v=>'<td>'+esc(v)+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
+ try{
+   if(navigator.clipboard&&window.ClipboardItem){
+     await navigator.clipboard.write([new ClipboardItem({
+       'text/html':new Blob([html],{type:'text/html'}),
+       'text/plain':new Blob([plain],{type:'text/plain'})
+     })]);
+   }else if(navigator.clipboard&&navigator.clipboard.writeText){
+     await navigator.clipboard.writeText(plain);
+   }else{
+     const ta=document.createElement('textarea');ta.value=plain;document.body.append(ta);ta.select();document.execCommand('copy');ta.remove();
+   }
+   $('copyNotice').textContent='Skopiowano samą tabelę terminów. Wklej ją do Worda, Teams lub wiadomości.';
+ }catch(err){
+   $('copyNotice').textContent='Kopiowanie nie powiodło się. Spróbuj ponownie.';
+ }
+};
+renderCalendar();renderTable();updateInfo();
+</script>
+</body>
+</html>
